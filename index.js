@@ -28,6 +28,13 @@ bot.on("text", (ctx, next) => {
   });
   next();
 });
+bot.command("debug", (ctx) => {
+  if(ctx.message.text.match(/keyboard|kbd/i)) {
+    ctx.reply("Keyboard removed.", {reply_markup:{remove_keyboard:true}});
+  } else {
+    ctx.reply(ctx.message);
+  }
+});
 //bot.hears("hi", (ctx) => ctx.reply("Hey there!"));
 //bot.hears(/echo/i, (ctx) => ctx.reply("Did someone say \"echo\"?"));
 //bot.on("sticker", (ctx) => ctx.reply("👍"));
