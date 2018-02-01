@@ -1,9 +1,12 @@
 "use strict";
 
 const Telegraf = require("telegraf");
+const Stage = require("telegraf/stage");
 const translate = require("google-translate-api");
 const firebaseSession = require("telegraf-session-firebase");
 const firebase = require("firebase-admin");
+
+const stages = require("./handlers/stages.js");
 
 var serviceAccount = require("./firebase-rau-firebase-adminsdk-qo49p-1bd84e14ab.json");
 
@@ -17,6 +20,15 @@ const database = firebase.database();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.use(firebaseSession(database.ref("telegram/sessions")));
 
+bot.use(new Stage([stages.main, stages.debug]).middleware());
+bot.command("debug", Stage.enter("debug"));
+bot.hears(/^exit/i, (ctx) => Stage.leave());
+
+bot.telegram.getMe().then((botInfo) =>//supergroup support
+{
+  bot.options.username = botInfo.username;
+});
+
 bot.start((ctx) =>
 {
   console.log("started:", ctx.from.id);
@@ -26,10 +38,15 @@ bot.start((ctx) =>
 bot.command("help", (ctx) => ctx.reply("Help coming soon..."));
 bot.command("echo", (ctx, next) =>
 {
-  ctx.reply(ctx.message.text.substring(ctx.message.entities[0].length).trim());
-  if (ctx.message.text.match(/(-|=)+>$/))
+  let text = ctx.message.text;
+  let start = ctx.message.entities[0].length;
+  if(text.length > start)
   {
-    next();
+    ctx.reply(text.substring(start).trim());
+    if (text.match(/(-|=)+>$/))
+    {
+      next();
+    }
   }
 });
 
@@ -51,21 +68,6 @@ bot.on("text", (ctx, next) =>
   });
   next();
 });
-bot.command("debug", Telegraf.acl(221944186, (ctx) =>
-{
-  if (ctx.message.text.match(/keyboard|kbd/i))
-  {
-    ctx.reply("Keyboard removed.", {
-      reply_markup: {
-        remove_keyboard: true
-      }
-    });
-  }
-  else
-  {
-    ctx.reply(ctx.message);
-  }
-}));
 //bot.hears("hi", (ctx) => ctx.reply("Hey there!"));
 //bot.hears(/echo/i, (ctx) => ctx.reply("Did someone say \"echo\"?"));
 //bot.on("sticker", (ctx) => ctx.reply("👍"));
