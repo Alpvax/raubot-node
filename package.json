@@ -20,8 +20,10 @@
   },
   "homepage": "https://t.me/rau_bot",
   "dependencies": {
+    "firebase-admin": "^5.8.2",
     "google-translate-api": "^2.3.0",
     "telegraf": "^3.17.3",
+    "telegraf-session-firebase": "0.0.1",
     "text-to-picture": "^1.0.0"
   }
 }

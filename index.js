@@ -2,8 +2,20 @@
 
 const Telegraf = require("telegraf");
 const translate = require("google-translate-api");
+const firebaseSession = require("telegraf-session-firebase");
+const firebase = require("firebase-admin");
+
+var serviceAccount = require("./firebase-rau-firebase-adminsdk-qo49p-1bd84e14ab.json");
+
+firebase.initializeApp({
+  credential: firebase.credential.cert(serviceAccount),
+  databaseURL: "https://rau.firebaseio.com"
+});
+
+const database = firebase.database();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+bot.use(firebaseSession(database.ref("telegram/sessions")));
 
 bot.start((ctx) =>
 {
