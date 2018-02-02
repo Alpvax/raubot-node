@@ -5,7 +5,11 @@
   },
   "extends": "eslint:recommended",
   "parserOptions": {
-    "sourceType": "module"
+    "sourceType": "module",
+    "ecmaVersion": 8,
+    "ecmaFeatures": {
+      "impliedStrict": true
+    }
   },
   "rules": {
     "no-console": "off",
@@ -37,6 +41,10 @@
     "curly": [
       "error",
       "all"
+    ],
+    "arrow-parens": [
+      "error",
+      "always"
     ],
     "indent": [
       "error",
