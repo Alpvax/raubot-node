@@ -21,18 +21,30 @@ debugScene.hears(/^keyboard|kbd/i, (ctx) =>
     }
   });
 });
-debugScene.hears(/^(context|ctx)/i, (ctx) =>
+debugScene.hears(/^(?:context|ctx)((?:\.\w+)+)?/i, (ctx) =>
 {
-  let res = {};
-  for(let key of Object.keys(ctx))
+  let obj = ctx;
+  let res = "ctx";
+  if(ctx.match[1])
   {
-    if(typeof ctx[key] !== "function")
+    for(let key of ctx.match[1].split(/\./).filter((x) => x))
     {
-      res[key] = ctx[key];
+      if(obj[key] !== undefined)
+      {
+        obj = obj[key];
+        res += "." + key;
+      }
+      else
+      {
+        res += " does not have property: \"" + key + "\"\n" + res;
+      }
     }
   }
-  //ctx.reply(res);
-  console.log(res);
+  res += ":\n" + JSON.stringify(obj, (k,v) =>
+  {
+    return (k && v && typeof v === "object") ? v.toString(): v;
+  }, 2);
+  ctx.reply(res);
 });
 debugScene.hears(/^session/i, (ctx) => ctx.reply(ctx.session));
 //debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
