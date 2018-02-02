@@ -5,6 +5,7 @@ const Stage = require("telegraf/stage");
 const translate = require("google-translate-api");
 const firebaseSession = require("telegraf-session-firebase");
 const firebase = require("firebase-admin");
+const prose = require("rau-prose-gen");
 
 const stages = require("./handlers/stages.js");
 
@@ -50,11 +51,32 @@ bot.command("echo", (ctx, next) =>
   }
 });
 
+bot.command("prose", (ctx) =>
+{
+  let text = ctx.message.text;
+  let start = ctx.message.entities[0].length;
+  let args = [20];
+  if(text.length > start)
+  {
+    args = text.substring(start).trim().split(" ").filter((n) => n).map(parseInt);
+  }
+  async function messageLoop(string)
+  {
+    let parts = string.match(/[\s\S]{1,4096}/g) || [];
+    //parts.map((p) => {() => console.log(p);ctx.reply(p);}).reduce((p, c) => p.next(c), Promise.resolve());
+    for(let part of parts)
+    {
+      await ctx.reply(part);
+    }
+  }
+  messageLoop(prose(...args));
+});
+
 bot.on("text", (ctx, next) =>
 {
   translate(ctx.message.text, {
     to: "en"
-  }).then(res =>
+  }).then((res) =>
   {
     if (res.from.language.iso !== "en")
     {
@@ -62,7 +84,7 @@ bot.on("text", (ctx, next) =>
         reply_to_message_id: ctx.message.message_id
       });
     }
-  }).catch(err =>
+  }).catch((err) =>
   {
     console.error(err);
   });
