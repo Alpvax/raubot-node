@@ -2,7 +2,9 @@
 
 const Scene = require("telegraf/scenes/base");
 const Stage = require("telegraf/stage");
+
 const git = require("simple-git")();
+const {version} = require("../package.json");
 
 // Debug scene
 const debugScene = new Scene("debug");
@@ -19,6 +21,7 @@ debugScene.hears(/^keyboard|kbd/i, (ctx) =>
     }
   });
 });
+debugScene.hears(/^version/i, (ctx) => ctx.reply(version));
 debugScene.hears(/^(?:context|ctx)((?:\.\w+)+)?/i, (ctx) =>
 {
   let obj = ctx;
