@@ -31,9 +31,9 @@ bot.context.longReply = async function(string, msgOptions, head = "", foot = "")
 };
 bot.use(firebaseSession(database.ref("telegram/sessions")));
 
-bot.use(new Stage([stages.debug]).middleware());
+bot.use(new Stage([stages.debug, stages.translate]).middleware());
 bot.command("debug", Stage.enter("debug"));
-bot.hears(/^exit/i, (ctx) => Stage.leave());
+bot.hears(/^exit/i, Stage.leave());
 
 bot.telegram.getMe().then((botInfo) =>//supergroup support
 {
@@ -72,6 +72,8 @@ bot.command("prose", (ctx) =>
   }
   ctx.longReply(prose(...args).replace(/ /g, "\n"), {parse_mode: "Markdown"}, "```", "```");
 });
+
+bot.command("translate", Stage.enter("translationconfig"));
 
 bot.on("text", (ctx, next) =>
 {
