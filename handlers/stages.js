@@ -2,6 +2,7 @@
 
 const Scene = require("telegraf/scenes/base");
 const Stage = require("telegraf/stage");
+const git = require("simple-git")();
 
 // Debug scene
 const debugScene = new Scene("debug");
@@ -47,6 +48,38 @@ debugScene.hears(/^(?:context|ctx)((?:\.\w+)+)?/i, (ctx) =>
 debugScene.hears(/^session/i, (ctx) => ctx.reply(ctx.session));
 //debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
 debugScene.hears(/^exit/i, Stage.leave());
+
+debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) =>
+{
+  let checkOnly = Boolean(ctx.match[1] || ctx.match[2]);
+  ctx.reply("Checking for updates...");
+  git.fetch((err, res) =>
+  {
+    if(err)
+    {
+      ctx.reply("Error fetching updates: " + err);
+    }
+    else
+    {
+      console.log(res);
+      if(!checkOnly)
+      {
+        git.pull((err, res) =>
+        {
+          if(err)
+          {
+            ctx.reply("Error updating: " + err);
+          }
+          else
+          {
+            console.log(res);
+            ctx.reply("Bot updated.");
+          }
+        });
+      }
+    }
+  });
+});
 
 // Echo scene
 /*const echoScene = new Scene("echo");
