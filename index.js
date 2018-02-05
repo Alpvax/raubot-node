@@ -22,7 +22,6 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.context.longReply = async function(string)
 {
   let parts = string.match(/[\s\S]{1,4096}/g) || [];
-  //parts.map((p) => {() => console.log(p);ctx.reply(p);}).reduce((p, c) => p.next(c), Promise.resolve());
   for(let part of parts)
   {
     await this.reply(part);
@@ -30,7 +29,7 @@ bot.context.longReply = async function(string)
 };
 bot.use(firebaseSession(database.ref("telegram/sessions")));
 
-bot.use(new Stage([stages.main, stages.debug]).middleware());
+bot.use(new Stage([stages.debug]).middleware());
 bot.command("debug", Stage.enter("debug"));
 bot.hears(/^exit/i, (ctx) => Stage.leave());
 
@@ -90,9 +89,6 @@ bot.on("text", (ctx, next) =>
   });
   next();
 });
-//bot.hears("hi", (ctx) => ctx.reply("Hey there!"));
-//bot.hears(/echo/i, (ctx) => ctx.reply("Did someone say \"echo\"?"));
-//bot.on("sticker", (ctx) => ctx.reply("👍"));
 
 console.log("Starting bot");
 bot.startPolling();

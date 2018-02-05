@@ -3,9 +3,6 @@
 const Scene = require("telegraf/scenes/base");
 const Stage = require("telegraf/stage");
 
-// Main scene
-const mainScene = new Scene("main");
-
 // Debug scene
 const debugScene = new Scene("debug");
 debugScene.enter((ctx) => ctx.reply("Entering debugging mode."));
@@ -45,10 +42,11 @@ debugScene.hears(/^(?:context|ctx)((?:\.\w+)+)?/i, (ctx) =>
     return (k && v && typeof v === "object") ? v.toString(): v;
   }, 2);
   ctx.reply(res);
+  console.log(obj);
 });
 debugScene.hears(/^session/i, (ctx) => ctx.reply(ctx.session));
 //debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
-debugScene.hears(/^exit/i, (ctx) => Stage.leave());
+debugScene.hears(/^exit/i, Stage.leave());
 
 // Echo scene
 /*const echoScene = new Scene("echo");
@@ -58,4 +56,4 @@ echoScene.command("back", Stage.leave());
 echoScene.on("text", (ctx) => ctx.reply(ctx.message.text));
 echoScene.on("message", (ctx) => ctx.reply("Only text messages please"));*/
 
-module.exports = {main: mainScene, debug: debugScene};
+module.exports = {debug: debugScene};
