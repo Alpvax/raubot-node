@@ -66,9 +66,9 @@ bot.command("prose", (ctx) =>
   let args = [20];
   if(text.length > start)
   {
-    args = text.substring(start).trim().split(" ").filter((n) => n).map(parseInt);
+    args = text.substring(start).trim().split(" ").filter((n) => n).map((n) => parseInt(n));
   }
-  ctx.longReply(prose(...args));
+  ctx.longReply(prose(...args).replace(" ", "\n"));
 });
 
 bot.on("text", (ctx, next) =>
