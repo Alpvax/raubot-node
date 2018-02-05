@@ -19,12 +19,14 @@ firebase.initializeApp({
 const database = firebase.database();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-bot.context.longReply = async function(string)
+bot.context.longReply = async function(string, msgOptions, head = "", foot = "")
 {
-  let parts = string.match(/[\s\S]{1,4096}/g) || [];
+  let hfLen = head.length + foot.length;
+  let pattern = new RegExp("[\\s\\S]{1," + (4096 - hfLen) + "}", "g");
+  let parts = string.match(pattern) || [];
   for(let part of parts)
   {
-    await this.reply(part);
+    await this.reply(head + part + foot, msgOptions);
   }
 };
 bot.use(firebaseSession(database.ref("telegram/sessions")));
@@ -68,7 +70,7 @@ bot.command("prose", (ctx) =>
   {
     args = text.substring(start).trim().split(" ").filter((n) => n).map((n) => parseInt(n));
   }
-  ctx.longReply(prose(...args).replace(/ /g, "\n"));
+  ctx.longReply(prose(...args).replace(/ /g, "\n"), {parse_mode: "Markdown"}, "```", "```");
 });
 
 bot.on("text", (ctx, next) =>
