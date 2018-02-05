@@ -46,7 +46,6 @@ debugScene.hears(/^(?:context|ctx)((?:\.\w+)+)?/i, (ctx) =>
   console.log(obj);
 });
 debugScene.hears(/^session/i, (ctx) => ctx.reply(ctx.session));
-//debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
 debugScene.hears(/^exit/i, Stage.leave());
 
 debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) =>
@@ -61,8 +60,11 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
     }
     else
     {
-      console.log(res);
-      if(!checkOnly)
+      if(!res.raw)
+      {
+        ctx.reply("Already up to date");
+      }
+      else if(!checkOnly)
       {
         git.pull((err, res) =>
         {
@@ -80,6 +82,9 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
     }
   });
 });
+
+
+//debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
 
 // Echo scene
 /*const echoScene = new Scene("echo");
