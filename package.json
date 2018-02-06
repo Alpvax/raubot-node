@@ -20,6 +20,7 @@
   },
   "homepage": "https://t.me/rau_bot",
   "dependencies": {
+    "argparse": "^1.0.9",
     "firebase-admin": "^5.8.2",
     "google-translate-api": "^2.3.0",
     "rau-prose-gen": "github:Trymunx/Prose-Gen",

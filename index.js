@@ -2,7 +2,7 @@
 
 const Telegraf = require("telegraf");
 const Stage = require("telegraf/stage");
-const translate = require("google-translate-api");
+const gtranslate = require("google-translate-api");
 const firebaseSession = require("telegraf-session-firebase");
 const firebase = require("firebase-admin");
 const prose = require("rau-prose-gen");
@@ -75,23 +75,38 @@ bot.command("prose", (ctx) =>
 
 bot.command("translate", Stage.enter("translationconfig"));
 
+function translate(text, toLang)
+{
+  return new Promise((resolve) => gtranslate(text, {to: toLang}).then((res) =>
+  {
+    resolve(Object.assign(res, {lang: toLang}));
+  }));
+}
+
 bot.on("text", (ctx, next) =>
 {
-  translate(ctx.message.text, {
-    to: "en"
-  }).then((res) =>
+  let userLangs = ctx.session.translateLangs || {};
+  let langs = Object.keys(userLangs);
+  if(langs.length > 0)
   {
-    if (res.from.language.iso !== "en")
-    {
-      ctx.reply(res.text, {
-        reply_to_message_id: ctx.message.message_id
+    Promise.all(langs.map((lang) => translate(ctx.message.text, lang)))
+      .then((values) =>
+      {
+        let text = values
+          .filter((res) => res.from.language.iso !== res.lang)
+          .map((res) => userLangs[res.lang] + ": " + res.text)
+          .join("\n\n");
+        ctx.reply(text, {
+          reply_to_message_id: ctx.message.message_id,
+          disable_notification: true
+        });
+      })
+      .catch((err) =>
+      {
+        console.error(err);
       });
-    }
-  }).catch((err) =>
-  {
-    console.error(err);
-  });
-  next();
+    next();
+  }
 });
 
 console.log("Starting bot");
