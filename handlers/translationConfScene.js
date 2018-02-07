@@ -3,7 +3,7 @@
 const Scene = require("telegraf/scenes/base");
 const Markup = require("telegraf/markup");
 const {ArgumentParser} = require("argparse");
-const {languages, getLangCode} = (function()
+const {languages} = (function()
 {
   let l = require("google-translate-api").languages;
   return {
@@ -81,9 +81,22 @@ const translationScene = new Scene("translationconfig");
 
 translationScene.hears(/^lang(uage)?s?/i, (ctx) =>
 {
-  let l = langSelection(0, ctx.session.translateLangs);
+  let l = langSelection(0, ctx.session.userLangs);
   ctx.reply(...l);
 });
+
+function setLang(ctx, lang, enabled)
+{
+  if(enabled)
+  {
+    delete ctx.session.userLangs[lang];
+  }
+  else
+  {
+    ctx.session.userLangs[lang] = true;
+  }
+  console.log("Set lang:\nuSession: %O\ncSession: %O", ctx.session.userLangs, ctx.session.chatLangs);
+}
 
 translationScene.on("callback_query", (ctx) =>
 {
@@ -95,23 +108,28 @@ translationScene.on("callback_query", (ctx) =>
     let lang = match[1];
     if(lang)
     {
-      if(match[2] == "true")
-      {
-        delete ctx.session.translateLangs[lang];
-      }
-      else
-      {
-        if(!ctx.session.translateLangs)
-        {
-          ctx.session.translateLangs = {};
-        }
-        ctx.session.translateLangs[lang] = langMap.get(lang);
-      }
+      setLang(ctx, lang, match[2] == "true");
     }
-    return ctx.editMessageText(...langSelection(page, ctx.session.translateLangs));
+    return ctx.editMessageText(...langSelection(page, ctx.session.userLangs));
   }
   console.log(ctx.callbackQuery.data);
 
+});
+
+translationScene.hears(/^translatem(?:e|yself)([:=\s]?(?:((?:t(?:rue)?)|on)|((?:f(?:alse)?)|off)))?/i, (ctx) =>
+{
+  if(ctx.match[1])
+  {
+    if(ctx.match[2])
+    {
+      ctx.session.translateMyself = true;
+    }
+    else
+    {
+      delete ctx.session.translateMyself;
+    }
+  }
+  ctx.reply("Self translation: " + (ctx.session.translateMyself ? "ON" : "OFF"));
 });
 
 /*translationScene.on("text", (ctx) =>

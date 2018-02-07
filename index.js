@@ -3,10 +3,11 @@
 const Telegraf = require("telegraf");
 const Stage = require("telegraf/stage");
 const gtranslate = require("google-translate-api");
-const firebaseSession = require("telegraf-session-firebase");
+//const firebaseSession = require("./telegram-session-firebase-modified.js");//Modified version of telegraf-session-firebase
 const firebase = require("firebase-admin");
 const prose = require("rau-prose-gen");
 
+const session = require("./ComplexSession.js");
 const stages = require("./handlers/stages.js");
 
 var serviceAccount = require("./firebase-rau-firebase-adminsdk-qo49p-1bd84e14ab.json");
@@ -29,7 +30,43 @@ bot.context.longReply = async function(string, msgOptions, head = "", foot = "")
     await this.reply(head + part + foot, msgOptions);
   }
 };
-bot.use(firebaseSession(database.ref("telegram/sessions")));
+
+bot.use(session(database.ref("telegram/sessions")));
+
+bot.use((ctx, next) =>
+{
+  ctx.session.defineUserValue("__scenes");
+  ctx.session.defineUserValue("translateMyself");
+  ctx.session.defineUnsavedProperty("chatLangs", {
+    get()
+    {
+      return Object.entries(ctx.session.allUsers)
+        .filter(([uid, user]) => (ctx.session.translateMyself || uid != ctx.from.id) && "userLangs" in user)
+        .map(([uid, user]) =>
+        {
+          return Object.entries(user.userLangs)
+            .filter(([k, v]) => v)
+            .map(([k, v]) => k);
+        })
+        .reduce((a, v) =>
+        {
+          v.forEach((l) =>
+          {
+            if(l in a)
+            {
+              a[l]++;
+            }
+            else
+            {
+              a[l] = 1;
+            }
+          });
+          return a;
+        }, {});
+    }
+  });
+  return next();
+});
 
 bot.use(new Stage([stages.debug, stages.translate]).middleware());
 bot.command("debug", Stage.enter("debug"));
@@ -42,7 +79,7 @@ bot.telegram.getMe().then((botInfo) =>//supergroup support
 
 bot.start((ctx) =>
 {
-  console.log("started:", ctx.from.id);
+  console.log("Started: user_id = %O", ctx.from.id);
   return ctx.reply(`Welcome, ${ctx.from.first_name}!`);
 });
 
@@ -85,28 +122,34 @@ function translate(text, toLang)
 
 bot.on("text", (ctx, next) =>
 {
-  let userLangs = ctx.session.translateLangs || {};
-  let langs = Object.keys(userLangs);
-  if(langs.length > 0)
+  return next().then(() =>
   {
-    Promise.all(langs.map((lang) => translate(ctx.message.text, lang)))
-      .then((values) =>
-      {
-        let text = values
-          .filter((res) => res.from.language.iso !== res.lang)
-          .map((res) => userLangs[res.lang] + ": " + res.text)
-          .join("\n\n");
-        ctx.reply(text, {
-          reply_to_message_id: ctx.message.message_id,
-          disable_notification: true
+    let userLangs = ctx.session.chatLangs || {};
+    let langs = Object.keys(userLangs);
+    if(langs.length > 0)
+    {
+      return Promise.all(langs.map((lang) => translate(ctx.message.text, lang)))
+        .then((values) =>
+        {
+          let text = values
+            .filter((res) => res.from.language.iso !== res.lang)
+            .map((res) => gtranslate.languages[res.lang] + ": " + res.text)
+            //.map((res) => res.lang + ": " + res.text)
+            .join("\n\n");
+          if(text.length > 0)
+          {
+            return ctx.reply(text, {
+              reply_to_message_id: ctx.message.message_id,
+              disable_notification: true
+            });
+          }
+        })
+        .catch((err) =>
+        {
+          console.error(err);
         });
-      })
-      .catch((err) =>
-      {
-        console.error(err);
-      });
-    next();
-  }
+    }
+  });
 });
 
 console.log("Starting bot");

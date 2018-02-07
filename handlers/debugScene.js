@@ -83,15 +83,26 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
       process.once("SIGUSR2", () => console.log("nodemon quit ignored"));
       return git.pull();
     })
-    .then((res) => Promise.reject({message: "\u2714 Updated."}), gitError("Error downloading update."))
-    .catch(({message, errorObject}) =>
+    .then((res) => Promise.reject({message: "\u2714 Updated.", updated: true}), gitError("Error downloading update."))
+    .catch(({message, errorObject, updated}) =>
     {
-      console.log(message, errorObject);
       if(errorObject)
       {
         message = "\u2757 " + message;
       }
-      return chatMessage.then((msg) => ctx.tg.editMessageText(msg.chat.id, msg.message_id, undefined, msg.text + "\n\n" + message)).then(() => process.kill(process.pid, "SIGUSR2"));
+      return chatMessage.then((msg) =>
+      {
+        let edit = ctx.tg.editMessageText(msg.chat.id, msg.message_id, undefined, msg.text + "\n\n" + message);
+        if(updated)
+        {
+          return edit.then(() =>
+          {
+            console.log("nodemon quitting");
+            process.kill(process.pid, "SIGUSR2");
+          });
+        }
+        return edit;
+      });
     });
 });
 
