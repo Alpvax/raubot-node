@@ -54,23 +54,6 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
 {
   let checkOnly = Boolean(ctx.match[1] || ctx.match[2]);
   let chatMessage = ctx.reply("Checking for updates...");
-  /*
-  function fetch(){ return new Promise((s,f) => true ? s("Fetch success") : f(Error({error: true})))};
-  function status(){ return new Promise((s,f) => true ? s("Status success") : f(Error({error: true})))};
-  function pull(){ return new Promise((s,f) => true ? s("Pull success") : f(Error({error: true})))};
-  function err(msg){
-    return (error) => {
-      let res = error instanceof Error ? {msg: msg, err:error} : error;
-      console.log(res);
-      return Promise.reject(res)
-    }
-  }
-  fetch()
-  .then(status, err("fetch"))
-  .then(pull, err("status"))
-  .then((res) => console.log("Success", res), err("pull"))
-  .catch(console.log)
-   */
   function gitError(message)
   {
     return (err) =>
@@ -95,7 +78,11 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
         return Promise.resolve();
       }
     }, gitError("Error checking for updates"))
-    .then((res) => git.pull())
+    .then((res) =>
+    {
+      process.once("SIGUSR2", () => console.log("nodemon quit ignored"));
+      return git.pull();
+    })
     .then((res) => Promise.reject({message: "\u2714 Updated."}), gitError("Error downloading update."))
     .catch(({message, errorObject}) =>
     {
@@ -104,42 +91,9 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
       {
         message = "\u2757 " + message;
       }
-      return chatMessage.then((msg) => ctx.tg.editMessageText(msg.chat.id, msg.message_id, undefined, msg.text + "\n\n" + message));
+      return chatMessage.then((msg) => ctx.tg.editMessageText(msg.chat.id, msg.message_id, undefined, msg.text + "\n\n" + message)).then(() => process.kill(process.pid, "SIGUSR2"));
     });
 });
-/*{
-    if(err)
-    {
-      ctx.reply("Error fetching updates: " + err);
-    }
-    else
-    {
-      if(!res.raw)
-      {
-        ctx.reply("Already up to date");
-      }
-      else
-      {
-        console.log(res);
-        ctx.reply("Update available: ");
-        if(!checkOnly)
-        {
-          git.pull((err, res) =>
-          {
-            if(err)
-            {
-              ctx.reply("Error updating: " + err);
-            }
-            else
-            {
-              console.log(res);
-              ctx.reply("Bot updated.");
-            }
-          });
-        }
-      }
-    }
-  });*/
 
 
 //debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
