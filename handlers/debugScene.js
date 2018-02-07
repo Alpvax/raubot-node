@@ -2,7 +2,7 @@
 
 const Scene = require("telegraf/scenes/base");
 
-const git = require("simple-git")();
+const git = require("simple-git/promise")();
 const {version} = require("../package.json");
 
 // Debug scene
@@ -53,9 +53,61 @@ debugScene.hears(/^session/i, (ctx) => ctx.reply(ctx.session));
 debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) =>
 {
   let checkOnly = Boolean(ctx.match[1] || ctx.match[2]);
-  ctx.reply("Checking for updates...");
-  git.fetch((err, res) =>
+  let chatMessage = ctx.reply("Checking for updates...");
+  /*
+  function fetch(){ return new Promise((s,f) => true ? s("Fetch success") : f(Error({error: true})))};
+  function status(){ return new Promise((s,f) => true ? s("Status success") : f(Error({error: true})))};
+  function pull(){ return new Promise((s,f) => true ? s("Pull success") : f(Error({error: true})))};
+  function err(msg){
+    return (error) => {
+      let res = error instanceof Error ? {msg: msg, err:error} : error;
+      console.log(res);
+      return Promise.reject(res)
+    }
+  }
+  fetch()
+  .then(status, err("fetch"))
+  .then(pull, err("status"))
+  .then((res) => console.log("Success", res), err("pull"))
+  .catch(console.log)
+   */
+  function gitError(message)
   {
+    return (err) =>
+    {
+      return Promise.reject(err instanceof Error ? {message: message, errorObj:err} : err);
+    };
+  }
+  git.fetch()
+    .then((res) => git.status(), gitError("Error fetching updates: "))
+    .then((res) =>
+    {
+      if(res.behind < 1)
+      {
+        return Promise.reject({message: "\u2714 Already up to date"});
+      }
+      else if(checkOnly)
+      {
+        return Promise.reject({message: "🆕 New version available"});
+      }
+      else
+      {
+        return Promise.resolve();
+      }
+    }, gitError("Error checking for updates"))
+    .then((res) => git.pull())
+    .then((res) => Promise.reject({message: "\u2714 Updated."}), gitError("Error downloading update."))
+    .catch(({message, errorObject}) =>
+    {
+      console.log(message, errorObject);
+      if(errorObject)
+      {
+        message = "\u2757 " + message;
+      }
+      return chatMessage.then((msg) => ctx.tg.editMessageText(msg.chat.id, msg.message_id, undefined, msg.text + "\n\n" + message));
+    });
+});
+/*{
     if(err)
     {
       ctx.reply("Error fetching updates: " + err);
@@ -66,24 +118,28 @@ debugScene.hears(/^(?:(?:update([- ]?check)?)|(?:(check[- ]?)?update))/i, (ctx) 
       {
         ctx.reply("Already up to date");
       }
-      else if(!checkOnly)
+      else
       {
-        git.pull((err, res) =>
+        console.log(res);
+        ctx.reply("Update available: ");
+        if(!checkOnly)
         {
-          if(err)
+          git.pull((err, res) =>
           {
-            ctx.reply("Error updating: " + err);
-          }
-          else
-          {
-            console.log(res);
-            ctx.reply("Bot updated.");
-          }
-        });
+            if(err)
+            {
+              ctx.reply("Error updating: " + err);
+            }
+            else
+            {
+              console.log(res);
+              ctx.reply("Bot updated.");
+            }
+          });
+        }
       }
     }
-  });
-});
+  });*/
 
 
 //debugScene.hears(/^conf(ig)?/i, (ctx) => ctx.reply(ctx.session));
