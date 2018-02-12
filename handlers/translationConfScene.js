@@ -118,7 +118,8 @@ translationScene.on("callback_query", (ctx) =>
 
 translationScene.hears(/^translatem(?:e|yself)([:=\s]?(?:((?:t(?:rue)?)|on)|((?:f(?:alse)?)|off)))?/i, (ctx) =>
 {
-  if(ctx.match[1])
+  let privateChat = ctx.chat.type == "private";
+  if(!privateChat && ctx.match[1])
   {
     if(ctx.match[2])
     {
@@ -129,7 +130,7 @@ translationScene.hears(/^translatem(?:e|yself)([:=\s]?(?:((?:t(?:rue)?)|on)|((?:
       delete ctx.session.translateMyself;
     }
   }
-  ctx.reply("Self translation: " + (ctx.session.translateMyself ? "ON" : "OFF"));
+  ctx.reply("Self translation: " + (privateChat ? "always ON for private chats" : (ctx.session.translateMyself ? "ON" : "OFF")));
 });
 
 /*translationScene.on("text", (ctx) =>

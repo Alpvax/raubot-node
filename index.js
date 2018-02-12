@@ -41,7 +41,7 @@ bot.use((ctx, next) =>
     get()
     {
       return Object.entries(ctx.session.allUsers)
-        .filter(([uid, user]) => (ctx.session.translateMyself || uid != ctx.from.id) && "userLangs" in user)
+        .filter(([uid, user]) => (ctx.chat.type == "private" || ctx.session.translateMyself || uid != ctx.from.id) && "userLangs" in user)
         .map(([uid, user]) =>
         {
           return Object.entries(user.userLangs)
