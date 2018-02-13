@@ -9,8 +9,10 @@ firebase.initializeApp({
   databaseURL: "https://rau.firebaseio.com"
 });
 
+const database = firebase.database();
+
 const bot = new AdvancedBot(process.env.BOT_TOKEN, require("./package.json").version);
-bot.use(session());
+bot.use(session(database.ref("telegram/sessions")));
 
 console.log("Starting bot");
 bot.startPolling();

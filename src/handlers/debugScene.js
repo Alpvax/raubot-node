@@ -3,7 +3,6 @@
 const Scene = require("telegraf/scenes/base");
 
 const git = require("simple-git/promise")();
-const {version} = require("../package.json");
 
 // Debug scene
 const debugScene = new Scene("debug");
@@ -20,7 +19,7 @@ debugScene.hears(/^keyboard|kbd/i, (ctx) =>
     }
   });
 });
-debugScene.hears(/^version/i, (ctx) => ctx.reply(version));
+debugScene.hears(/^version/i, (ctx) => ctx.reply(ctx.version));
 debugScene.hears(/^(?:context|ctx)((?:\.\w+)+)?/i, (ctx) =>
 {
   let obj = ctx;
