@@ -8,16 +8,19 @@ class AdvancedBot extends Telegraf
   {
     super(token, options);
     this.version = version;
-    this.context.longReply = async function(string, msgOptions, head = "", foot = "")
-    {
-      let hfLen = head.length + foot.length;
-      let pattern = new RegExp("[\\s\\S]{1," + (4096 - hfLen) + "}", "g");
-      let parts = string.match(pattern) || [];
-      for(let part of parts)
+    Object.assign(this.context, {
+      botVersion: version,
+      longReply: async function(string, msgOptions, head = "", foot = "")
       {
-        await this.reply(head + part + foot, msgOptions);
+        let hfLen = head.length + foot.length;
+        let pattern = new RegExp("[\\s\\S]{1," + (4096 - hfLen) + "}", "g");
+        let parts = string.match(pattern) || [];
+        for(let part of parts)
+        {
+          await this.reply(head + part + foot, msgOptions);
+        }
       }
-    };
+    });
   }
   defineSessionProperties(...definers)
   {
