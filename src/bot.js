@@ -21,6 +21,68 @@ class AdvancedBot extends Telegraf
         }
       }
     });
+    this.use(Telegraf.compose([
+      Telegraf.optional((ctx) => ctx.chat.type == "private", this.privateComposer.middleware()),
+      Telegraf.optional((ctx) => ctx.chat.type == "channel", this.channelComposer.middleware()),
+      Telegraf.optional((ctx) => ctx.chat.type == "group", this.groupComposer.middleware()),
+      Telegraf.optional((ctx) => ctx.chat.type == "supergroup", this.superGroupComposer.middleware())
+    ]));
+  }
+  privateChatHandler(...handlers)
+  {
+    if(!this.privateComposer)
+    {
+      this.privateComposer = new Telegraf.Composer();
+    }
+    for(let func of handlers)
+    {
+      if(typeof func == "function")
+      {
+        func(this.privateComposer);
+      }
+    }
+  }
+  channelHandler(...handlers)
+  {
+    if(!this.channelComposer)
+    {
+      this.channelComposer = new Telegraf.Composer();
+    }
+    for(let func of handlers)
+    {
+      if(typeof func == "function")
+      {
+        func(this.channelComposer);
+      }
+    }
+  }
+  groupHandler(...handlers)
+  {
+    if(!this.groupComposer)
+    {
+      this.groupComposer = new Telegraf.Composer();
+    }
+    for(let func of handlers)
+    {
+      if(typeof func == "function")
+      {
+        func(this.groupComposer);
+      }
+    }
+  }
+  superGroupHandler(...handlers)
+  {
+    if(!this.superGroupComposer)
+    {
+      this.superGroupComposer = new Telegraf.Composer();
+    }
+    for(let func of handlers)
+    {
+      if(typeof func == "function")
+      {
+        func(this.superGroupComposer);
+      }
+    }
   }
   defineSessionProperties(...definers)
   {
@@ -28,7 +90,7 @@ class AdvancedBot extends Telegraf
     {
       for(let func of definers)
       {
-        if(typeof func !== "function")
+        if(typeof func == "function")
         {
           func(ctx.session, ctx);
         }
