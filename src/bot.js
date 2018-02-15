@@ -21,14 +21,59 @@ class AdvancedBot extends Telegraf
         }
       }
     });
-    this.use(Telegraf.compose([
-      Telegraf.optional((ctx) => ctx.chat.type == "private", this.privateComposer.middleware()),
-      Telegraf.optional((ctx) => ctx.chat.type == "channel", this.channelComposer.middleware()),
-      Telegraf.optional((ctx) => ctx.chat.type == "group", this.groupComposer.middleware()),
-      Telegraf.optional((ctx) => ctx.chat.type == "supergroup", this.superGroupComposer.middleware())
-    ]));
+    this.chatHandlers = new Map();
+    this.use(Telegraf.lazy((ctx) => Promise.resolve(ctx.chat.type)).then((chatType) => this.chatHandlers.get(chatType) || Telegraf.safePassThru()));
   }
-  privateChatHandler(...handlers)
+  addChatHandler(chatTypes, ...handlers)
+  {
+    let comp;
+    let use;
+    if(!chatTypes || chatTypes.match(/\*/))
+    {
+      comp = this;
+      use = true;
+    }
+    else
+    {
+      chatTypes = Telegraf.normalizeTriggers(chatTypes);
+      if(chatTypes.length == 1)
+      {
+        let ct = chatTypes[0];
+        if(!this.chatHandlers.has(ct))
+        {
+          this.chatHandlers.set(ct, new Telegraf.Composer());
+        }
+        comp = this.chatHandlers.get(ct);
+        use = false;
+      }
+      else
+      {
+        comp = new Telegraf.Composer();
+        use = (ctx) =>
+        {
+          for(let trigger of chatTypes)
+          {
+            if(trigger(ctx.chat.type, ctx))
+            {
+              return comp.middleware();
+            }
+          }
+        };
+      }
+    }
+    for(let func of handlers)
+    {
+      if(typeof func == "function")
+      {
+        func(comp);
+      }
+    }
+    if(use)
+    {
+      this.use(typeof use === "function" ? use : comp.middleware());
+    }
+  }
+  /*privateChatHandler(...handlers)
   {
     if(!this.privateComposer)
     {
@@ -83,7 +128,7 @@ class AdvancedBot extends Telegraf
         func(this.superGroupComposer);
       }
     }
-  }
+  }*/
   defineSessionProperties(...definers)
   {
     return Telegraf.optional((ctx) => ctx.session.user !== undefined, (ctx, next) =>
@@ -98,6 +143,14 @@ class AdvancedBot extends Telegraf
       return next();
     });
   }
+}
+
+for(let ct of ["Private", "Group", "SuperGroup", "Channel"])
+{
+  AdvancedBot.prototype[`add${ct}Handler`] = function(...handlers)
+  {
+    this.addChatHandler(ct.toLowerCase(), ...handlers);
+  };
 }
 
 module.exports = AdvancedBot;
