@@ -11,7 +11,16 @@ firebase.initializeApp({
 
 const database = firebase.database();
 
-const bot = new AdvancedBot(process.env.BOT_TOKEN, require("./package.json").version);
+const bot = new AdvancedBot(process.env.BOT_TOKEN, {
+  version:require("./package.json").version,
+  prevVer:database.ref("telegram/bot_state/version").once("value").then((snap) => snap.val())
+});
+bot.onVersionChange((newVer, prevVer) =>
+{
+  console.log(`Updated from v${prevVer} to v${newVer}`);
+  //bot.telegram.sendMessage()
+});
+
 bot.use(session(database.ref("telegram/sessions")));
 
 bot.defineSessionProperties((session, ctx) =>

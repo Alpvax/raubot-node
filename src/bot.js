@@ -1,15 +1,31 @@
 "use strict";
 
 const Telegraf = require("telegraf");
+const EventEmitter = require("events");
 
 class AdvancedBot extends Telegraf
 {
-  constructor(token, version, options)
+  constructor(token, opts)
   {
-    super(token, options);
-    this.version = version;
+    super(token, opts);
+    this.lifecycleBus = new EventEmitter();
+    this.version = this.options.version;
+    this.updatedFrom = false;
+    if("prevVer" in this.options)
+    {
+      let prevVer = Promise.resolve(this.options.prevVer);
+      delete this.options.prevVer;
+      prevVer.then((value) =>
+      {
+        if(value != this.version)
+        {
+          this.updatedFrom = value;
+          this.lifecycleBus.emit("versionChange");
+        }
+      });
+    }
     Object.assign(this.context, {
-      botVersion: version,
+      botVersion: this.version,
       longReply: async function(string, msgOptions, head = "", foot = "")
       {
         let hfLen = head.length + foot.length;
@@ -23,6 +39,14 @@ class AdvancedBot extends Telegraf
     });
     this.chatHandlers = new Map();
     this.use(Telegraf.lazy((ctx) => Promise.resolve(ctx.chat.type)).then((chatType) => this.chatHandlers.get(chatType) || Telegraf.safePassThru()));
+  }
+  onVersionChange(handler)
+  {
+    if(this.updatedFrom)
+    {
+      handler(this.version, this.updatedFrom);
+    }
+    this.lifecycleBus.on("versionChange", () => handler(this.version, this.updatedFrom));
   }
   addChatHandler(chatTypes, ...handlers)
   {
