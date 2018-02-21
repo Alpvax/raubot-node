@@ -17,6 +17,7 @@ class AdvancedBot extends Telegraf
       delete this.options.prevVer;
       prevVer.then((value) =>
       {
+        console.log(`version: ${this.version}; prev: ${value}`);
         if(value != this.version)
         {
           this.updatedFrom = value;
@@ -38,7 +39,7 @@ class AdvancedBot extends Telegraf
       }
     });
     this.chatHandlers = new Map();
-    this.use(Telegraf.lazy((ctx) => Promise.resolve(ctx.chat.type)).then((chatType) => this.chatHandlers.get(chatType) || Telegraf.safePassThru()));
+    this.use(Telegraf.lazy((ctx) => Promise.resolve(ctx.chat.type).then((chatType) => this.chatHandlers.get(chatType) || Telegraf.safePassThru())));
   }
   onVersionChange(handler)
   {
@@ -97,6 +98,21 @@ class AdvancedBot extends Telegraf
       this.use(typeof use === "function" ? use : comp.middleware());
     }
   }
+  startPolling()
+  {
+    this.lifecycleBus.emit("start", {type: "polling"});
+    return super.startPolling(...arguments);
+  }
+  startWebhook()
+  {
+    this.lifecycleBus.emit("start", {type: "webhook"});
+    return super.startWebhook(...arguments);
+  }
+  stop()
+  {
+    this.lifecycleBus.emit("stop");
+    return super.stop(...arguments);
+  }
   /*privateChatHandler(...handlers)
   {
     if(!this.privateComposer)
@@ -153,7 +169,7 @@ class AdvancedBot extends Telegraf
       }
     }
   }*/
-  defineSessionProperties(...definers)
+  /*defineSessionProperties(...definers)
   {
     return Telegraf.optional((ctx) => ctx.session.user !== undefined, (ctx, next) =>
     {
@@ -166,7 +182,7 @@ class AdvancedBot extends Telegraf
       }
       return next();
     });
-  }
+  }*/
 }
 
 for(let ct of ["Private", "Group", "SuperGroup", "Channel"])
